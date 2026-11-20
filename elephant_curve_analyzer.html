@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elephant Curve Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f1ec;--card:#fff;--ink:#1f2328;--muted:#6b7280;--brand:#c2410c;--brand2:#7c2d12;--line:#e5e0d8;--ok:#15803d;--bad:#b91c1c;--soft:#fff4ec}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;font-size:16px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+header{background:linear-gradient(135deg,#7c2d12,#c2410c);color:#fff;padding:26px 0}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+h1{margin:0;font-size:28px}
+header p{margin:4px 0 0;opacity:.92;font-size:15px}
+main{padding:22px 16px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card[hidden],[hidden]{display:none!important}
+h2{margin:0 0 14px;font-size:20px;display:flex;align-items:center;gap:10px}
+h3{margin:18px 0 8px;font-size:17px;color:var(--brand2)}
+.n{display:inline-flex;width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex:none}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.mode{border:2px solid var(--line);background:#fff;border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;font-family:inherit;transition:.15s}
+.mode:hover{border-color:var(--brand);transform:translateY(-1px)}
+.mode.on{border-color:var(--brand);background:var(--soft);box-shadow:0 0 0 3px rgba(194,65,12,.15)}
+.mode b{display:block;font-size:16px;margin-bottom:2px}
+.mode span{font-size:13.5px;color:var(--muted)}
+label{display:block;font-weight:600;margin-bottom:4px;font-size:15px}
+input[type=text],input[type=number],input:not([type]),textarea{width:100%;padding:10px 12px;border:1.5px solid #d6d0c6;border-radius:10px;font-family:inherit;font-size:16px;background:#fff}
+input:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(194,65,12,.15)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:14px}
+.grid4 .span2{grid-column:span 2}
+.hint{color:var(--muted);font-size:13.5px;margin:8px 0 0}
+.ac{position:relative}
+.ac-list{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 4px);max-height:290px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);display:none}
+.ac-item{padding:9px 14px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #f3efe9}
+.ac-item small{color:var(--muted)}
+.ac-item.act,.ac-item:hover{background:var(--soft)}
+.ac-empty{padding:10px 14px;color:var(--muted)}
+.badge{min-height:22px;margin-top:6px;font-size:14px;color:var(--ok);font-weight:600}
+.seg{display:inline-flex;border:1.5px solid var(--brand);border-radius:12px;overflow:hidden;margin:6px 0 14px}
+.seg button{border:0;background:#fff;color:var(--brand);padding:9px 16px;font-family:inherit;font-size:15px;cursor:pointer;font-weight:600}
+.seg button.on{background:var(--brand);color:#fff}
+.btn{border:0;background:var(--brand);color:#fff;padding:11px 20px;border-radius:12px;font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;transition:.15s}
+.btn:hover{background:var(--brand2)}
+.btn.ghost{background:#fff;color:var(--brand);border:1.5px solid var(--brand)}
+.btn.ghost:hover{background:var(--soft)}
+.btn.big{padding:14px 28px;font-size:18px}
+.btn.sm{padding:6px 12px;font-size:13.5px;border-radius:9px}
+.btn.green{background:#15803d}.btn.green:hover{background:#166534}
+header .btn.ghost{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.7)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.tw{overflow-x:auto}
+.tbl{border-collapse:collapse;width:100%;font-size:14px;background:#fff}
+.tbl th{background:var(--brand2);color:#fff;padding:8px 10px;border:1px solid #a8441c;font-weight:600;text-align:center}
+.tbl td{padding:7px 10px;border:1px solid var(--line);text-align:right;white-space:nowrap}
+.tbl td:first-child,.tbl td.l{text-align:left;white-space:normal}
+.tbl tbody tr:nth-child(even){background:#faf7f2}
+.input-tbl td{padding:4px 6px}
+.input-tbl input{padding:7px 9px;font-size:15px;text-align:right}
+.pos{color:var(--ok);font-weight:600}.neg{color:var(--bad);font-weight:600}
+.err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:12px;padding:12px 16px;margin-top:14px;font-weight:500}
+.ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:12px;padding:10px 16px;margin-bottom:12px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+.capture{background:#fff;padding:16px;border:1px solid var(--line);border-radius:12px}
+.capture.capturing .tw{overflow:visible}
+.capture h2{font-size:21px;color:var(--brand2);margin-bottom:4px}
+.meta{color:var(--muted);font-size:14px;margin-bottom:6px}
+.expl{background:var(--soft);border-left:4px solid var(--brand);border-radius:8px;padding:12px 18px;margin-top:16px;font-size:14.5px}
+.expl h4{margin:6px 0;font-size:16px;color:var(--brand2)}
+.expl ul{margin:6px 0 10px;padding-left:20px}
+.expl p{margin:6px 0}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:18px;margin-top:14px}
+.cc-card{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
+.cc-head{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-bottom:6px}
+.cc-box{position:relative;height:370px}
+.btn.sm.on{background:var(--brand);color:#fff}
+.tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:600}
+.tag.y{background:#dcfce7;color:#166534}.tag.n{background:#fee2e2;color:#991b1b}
+footer{color:var(--muted);font-size:13.5px;margin-top:10px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1f2328;color:#fff;padding:10px 20px;border-radius:999px;z-index:99;opacity:0;pointer-events:none;transition:.3s}
+.toast.show{opacity:1}
+@media(max-width:560px){.charts{grid-template-columns:1fr}.grid4 .span2{grid-column:span 1}h1{font-size:23px}}
+</style>
+</head>
+<body>
+<header><div class="wrap hd">
+  <div><h1>🐘 Elephant Curve Analyzer</h1>
+  <p>วิเคราะห์ Elephant Curve / Growth Incidence Curve ตามแนวคิดของ Branko Milanovic และ Christoph Lakner</p></div>
+  <button class="btn ghost" id="resetTop">↺ รีเซ็ตหน้า</button>
+</div></header>
+
+<main class="wrap">
+  <section class="card">
+    <h2><span class="n">1</span>เลือกรูปแบบการวิเคราะห์</h2>
+    <div class="modes" id="modes"></div>
+  </section>
+
+  <section class="card" id="secCountry" hidden>
+    <h2><span class="n">2</span>เลือกประเทศที่ใช้วิเคราะห์</h2>
+    <div class="grid2">
+      <div>
+        <label>ประเทศ <span id="lblA"></span></label>
+        <div class="ac"><input id="inpA" autocomplete="off" placeholder="พิมพ์ตัวอักษรแรก เช่น ไ, ญ, ส หรือ T, J, U ..."><div class="ac-list" id="listA"></div></div>
+        <div class="badge" id="bdgA"></div>
+      </div>
+      <div id="wrapB" hidden>
+        <label>ประเทศ B</label>
+        <div class="ac"><input id="inpB" autocomplete="off" placeholder="พิมพ์ตัวอักษรแรกของประเทศที่สอง"><div class="ac-list" id="listB"></div></div>
+        <div class="badge" id="bdgB"></div>
+      </div>
+    </div>
+    <p class="hint">รองรับ <b id="cc"></b> ประเทศและเขตแดนทั่วโลก (ค้นหาได้ทั้งชื่อไทยและอังกฤษ) พิมพ์เพียงตัวอักษรแรกรายชื่อจะเด้งขึ้นมาให้เลือกทันที ใช้ลูกศรขึ้น/ลง + Enter ได้</p>
+  </section>
+
+  <section class="card" id="secData" hidden>
+    <h2><span class="n">3</span>ใส่ข้อมูลเพื่อการวิเคราะห์</h2>
+    <div class="grid4">
+      <div><label>ปีเริ่มต้น</label><input id="y1" type="number" value="2000"></div>
+      <div><label>ปีสิ้นสุด</label><input id="y2" type="number" value="2020"></div>
+      <div class="span2"><label>หน่วยรายได้</label><input id="unit" value="USD PPP ต่อคนต่อวัน"></div>
+    </div>
+    <div class="seg"><button id="mTable" class="on">กรอกเป็นตัวเลขในตาราง</button><button id="mText">วางเป็นข้อความ (CSV)</button></div>
+    <div id="tblBox" class="tw"></div>
+    <div id="txtBox" hidden>
+      <textarea id="txt" rows="12"></textarea>
+      <p class="hint" id="txtHint"></p>
+    </div>
+    <p class="hint">กรอก <b>รายได้เฉลี่ยของแต่ละกลุ่ม 10%</b> (Decile D1 = จนสุด → D10 = รวยสุด) ของปีเริ่มต้นและปีสิ้นสุด ใช้รายได้จริง (real) หน่วยเดียวกัน เช่น PPP คงที่</p>
+    <div class="row"><button class="btn ghost" id="btnSample">ใส่ข้อมูลตัวอย่าง (สมมติ)</button><button class="btn ghost" id="btnClear">ล้างข้อมูลที่กรอก</button></div>
+  </section>
+
+  <section class="card" id="secProc" hidden>
+    <h2><span class="n">4</span>ประมวลผล</h2>
+    <p class="hint" id="procNote" style="margin:0 0 12px"></p>
+    <div class="row" style="margin-top:0"><button class="btn big" id="btnProc">⚙️ ประมวลผลข้อมูล</button><button class="btn ghost" id="resetBot">↺ รีเซ็ตหน้า</button></div>
+    <div class="err" id="err" hidden></div>
+  </section>
+
+  <section class="card" id="secRes" hidden>
+    <h2><span class="n">5</span>ผลการประมวลผล</h2>
+    <div class="ok">✓ ประมวลผลข้อมูลเรียบร้อย เลือกรูปแบบการแสดงผลที่ต้องการ (กดได้ทั้งสองปุ่ม)</div>
+    <div class="row" style="margin-top:0">
+      <button class="btn" id="btnTable">📊 ประมวลผลเป็นตาราง</button>
+      <button class="btn" id="btnChart">📈 แสดงผลเป็นกราฟ</button>
+    </div>
+    <div id="tableOut" hidden>
+      <div class="toolbar">
+        <button class="btn sm green" id="dlTblPng">⬇ ดาวน์โหลดตารางเป็น PNG</button>
+        <button class="btn sm green" id="dlTblXls">⬇ ดาวน์โหลดตารางเป็น Excel</button>
+      </div>
+      <div class="capture" id="tableCapture"></div>
+    </div>
+    <div id="chartOut" class="charts" hidden></div>
+  </section>
+
+  <footer>
+    <p><b>อ้างอิง:</b> Lakner, C. &amp; Milanovic, B. (2016) "Global Income Distribution: From the Fall of the Berlin Wall to the Great Recession", <i>World Bank Economic Review</i> 30(2), 203–232; Milanovic, B. (2016) <i>Global Inequality: A New Approach for the Age of Globalization</i>. ค่าของ Elephant Curve ที่ฝังในหน้านี้เป็น <b>ค่าประมาณที่อ่านจากกราฟต้นฉบับ</b> เพื่อการศึกษา หากต้องการค่าที่แม่นยำให้ใช้ข้อมูลจากบทความ/ชุดข้อมูลต้นฉบับ (แก้ได้ที่ตัวแปร GLOBAL_G ในโค้ด) ข้อมูลตัวอย่างเป็นตัวเลขสมมติ ไม่ใช่ข้อมูลจริงของประเทศใด</p>
+  </footer>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const sum=a=>a.reduce((x,y)=>x+y,0);
+const f=(x,d=2)=>Number.isFinite(x)?x.toFixed(d):'–';
+const cls=x=>x>0?'pos':x<0?'neg':'';
+const PAL=['#d9480f','#1c7ed6','#2f9e44','#f08c00','#7048e8','#c2255c','#0c8599','#495057'];
+const al=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`};
+const COL10=i=>`hsl(${(20+i*34)%360} 65% 52%)`;
+const DEC=Array.from({length:10},(_,i)=>'D'+(i+1));
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
+
+/* ---------- Elephant curve (Lakner & Milanovic 2016, 1988-2008) approx. ---------- */
+const GLOBAL_P=[5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
+const GLOBAL_G=[11,25,40,48,57,64,70,74,78,80,76,68,50,35,22,10,4,6,25,65]; // % real income growth 1988-2008 (approx.)
+const GDEC=[0,2,4,6,8,10,12,14,16,18].map(i=>GLOBAL_G[i]); // percentile กลางของแต่ละ decile (5,15,...,95)
+
+/* ---------- Countries & territories ---------- */
+const COUNTRIES=`Afghanistan|อัฟกานิสถาน
+Åland Islands|หมู่เกาะโอลันด์
+Albania|แอลเบเนีย
+Algeria|แอลจีเรีย
+American Samoa|ซามัวอเมริกัน
+Andorra|อันดอร์รา
+Angola|แองโกลา
+Anguilla|แองกวิลลา
+Antarctica|ทวีปแอนตาร์กติกา
+Antigua and Barbuda|แอนติกาและบาร์บูดา
+Argentina|อาร์เจนตินา
+Armenia|อาร์เมเนีย
+Aruba|อารูบา
+Australia|ออสเตรเลีย
+Austria|ออสเตรีย
+Azerbaijan|อาเซอร์ไบจาน
+Bahamas|บาฮามาส
+Bahrain|บาห์เรน
+Bangladesh|บังกลาเทศ
+Barbados|บาร์เบโดส
+Belarus|เบลารุส
+Belgium|เบลเยียม
+Belize|เบลีซ
+Benin|เบนิน
+Bermuda|เบอร์มิวดา
+Bhutan|ภูฏาน
+Bolivia|โบลิเวีย
+Bonaire, Sint Eustatius and Saba|โบแนเรอ ซินต์เอิสตาซียึส และซาบา
+Bosnia and Herzegovina|บอสเนียและเฮอร์เซโกวีนา
+Botswana|บอตสวานา
+Bouvet Island|เกาะบูเว
+Brazil|บราซิล
+British Indian Ocean Territory|บริติชอินเดียนโอเชียนเทร์ริทอรี
+Brunei|บรูไน
+Bulgaria|บัลแกเรีย
+Burkina Faso|บูร์กินาฟาโซ
+Burundi|บุรุนดี
+Cabo Verde|กาบูเวร์ดี
+Cambodia|กัมพูชา
+Cameroon|แคเมอรูน
+Canada|แคนาดา
+Cayman Islands|หมู่เกาะเคย์แมน
+Central African Republic|สาธารณรัฐแอฟริกากลาง
+Chad|ชาด
+Chile|ชิลี
+China|จีน
+Christmas Island|เกาะคริสต์มาส
+Cocos (Keeling) Islands|หมู่เกาะโคโคส
+Colombia|โคลอมเบีย
+Comoros|คอโมโรส
+Congo (Republic of the)|สาธารณรัฐคองโก
+Congo (Democratic Republic of the)|สาธารณรัฐประชาธิปไตยคองโก
+Cook Islands|หมู่เกาะคุก
+Costa Rica|คอสตาริกา
+Côte d'Ivoire|โกตดิวัวร์
+Croatia|โครเอเชีย
+Cuba|คิวบา
+Curaçao|กูราเซา
+Cyprus|ไซปรัส
+Czechia|เช็กเกีย
+Denmark|เดนมาร์ก
+Djibouti|จิบูตี
+Dominica|โดมินิกา
+Dominican Republic|สาธารณรัฐโดมินิกัน
+Ecuador|เอกวาดอร์
+Egypt|อียิปต์
+El Salvador|เอลซัลวาดอร์
+Equatorial Guinea|อิเควทอเรียลกินี
+Eritrea|เอริเทรีย
+Estonia|เอสโตเนีย
+Eswatini|เอสวาตีนี
+Ethiopia|เอธิโอเปีย
+Falkland Islands|หมู่เกาะฟอล์กแลนด์
+Faroe Islands|หมู่เกาะแฟโร
+Fiji|ฟิจิ
+Finland|ฟินแลนด์
+France|ฝรั่งเศส
+French Guiana|เฟรนช์เกียนา
+French Polynesia|เฟรนช์โปลินีเซีย
+French Southern Territories|ดินแดนทางใต้ของฝรั่งเศส
+Gabon|กาบอง
+Gambia|แกมเบีย
+Georgia|จอร์เจีย
+Germany|เยอรมนี
+Ghana|กานา
+Gibraltar|ยิบรอลตาร์
+Greece|กรีซ
+Greenland|กรีนแลนด์
+Grenada|เกรเนดา
+Guadeloupe|กวาเดอลูป
+Guam|กวม
+Guatemala|กัวเตมาลา
+Guernsey|เกิร์นซีย์
+Guinea|กินี
+Guinea-Bissau|กินี-บิสเซา
+Guyana|กายอานา
+Haiti|เฮติ
+Heard Island and McDonald Islands|เกาะเฮิร์ดและหมู่เกาะแมกดอนัลด์
+Holy See (Vatican City)|นครรัฐวาติกัน
+Honduras|ฮอนดูรัส
+Hong Kong|ฮ่องกง
+Hungary|ฮังการี
+Iceland|ไอซ์แลนด์
+India|อินเดีย
+Indonesia|อินโดนีเซีย
+Iran|อิหร่าน
+Iraq|อิรัก
+Ireland|ไอร์แลนด์
+Isle of Man|เกาะแมน
+Israel|อิสราเอล
+Italy|อิตาลี
+Jamaica|จาเมกา
+Japan|ญี่ปุ่น
+Jersey|เจอร์ซีย์
+Jordan|จอร์แดน
+Kazakhstan|คาซัคสถาน
+Kenya|เคนยา
+Kiribati|คิริบาส
+Korea (North)|เกาหลีเหนือ
+Korea (South)|เกาหลีใต้
+Kosovo|โคโซโว
+Kuwait|คูเวต
+Kyrgyzstan|คีร์กีซสถาน
+Laos|ลาว
+Latvia|ลัตเวีย
+Lebanon|เลบานอน
+Lesotho|เลโซโท
+Liberia|ไลบีเรีย
+Libya|ลิเบีย
+Liechtenstein|ลิกเตนสไตน์
+Lithuania|ลิทัวเนีย
+Luxembourg|ลักเซมเบิร์ก
+Macao|มาเก๊า
+Madagascar|มาดากัสการ์
+Malawi|มาลาวี
+Malaysia|มาเลเซีย
+Maldives|มัลดีฟส์
+Mali|มาลี
+Malta|มอลตา
+Marshall Islands|หมู่เกาะมาร์แชลล์
+Martinique|มาร์ตินีก
+Mauritania|มอริเตเนีย
+Mauritius|มอริเชียส
+Mayotte|มายอต
+Mexico|เม็กซิโก
+Micronesia|ไมโครนีเซีย
+Moldova|มอลโดวา
+Monaco|โมนาโก
+Mongolia|มองโกเลีย
+Montenegro|มอนเตเนโกร
+Montserrat|มอนต์เซอร์รัต
+Morocco|โมร็อกโก
+Mozambique|โมซัมบิก
+Myanmar|เมียนมา
+Namibia|นามิเบีย
+Nauru|นาอูรู
+Nepal|เนปาล
+Netherlands|เนเธอร์แลนด์
+New Caledonia|นิวแคลิโดเนีย
+New Zealand|นิวซีแลนด์
+Nicaragua|นิการากัว
+Niger|ไนเจอร์
+Nigeria|ไนจีเรีย
+Niue|นีวเว
+Norfolk Island|เกาะนอร์ฟอล์ก
+North Macedonia|มาซิโดเนียเหนือ
+Northern Mariana Islands|หมู่เกาะนอร์เทิร์นมาเรียนา
+Norway|นอร์เวย์
+Oman|โอมาน
+Pakistan|ปากีสถาน
+Palau|ปาเลา
+Palestine|ปาเลสไตน์
+Panama|ปานามา
+Papua New Guinea|ปาปัวนิวกินี
+Paraguay|ปารากวัย
+Peru|เปรู
+Philippines|ฟิลิปปินส์
+Pitcairn Islands|หมู่เกาะพิตแคร์น
+Poland|โปแลนด์
+Portugal|โปรตุเกส
+Puerto Rico|เปอร์โตริโก
+Qatar|กาตาร์
+Réunion|เรอูนียง
+Romania|โรมาเนีย
+Russia|รัสเซีย
+Rwanda|รวันดา
+Saint Barthélemy|แซ็งบาร์เตเลมี
+Saint Helena, Ascension and Tristan da Cunha|เซนต์เฮเลนา แอสเซนชัน และตริสตันดากูนยา
+Saint Kitts and Nevis|เซนต์คิตส์และเนวิส
+Saint Lucia|เซนต์ลูเซีย
+Saint Martin (French part)|แซ็งมาร์แต็ง
+Saint Pierre and Miquelon|แซงปีแยร์และมีเกอลง
+Saint Vincent and the Grenadines|เซนต์วินเซนต์และเกรนาดีนส์
+Samoa|ซามัว
+San Marino|ซานมารีโน
+São Tomé and Príncipe|เซาตูเมและปรินซิปี
+Saudi Arabia|ซาอุดีอาระเบีย
+Senegal|เซเนกัล
+Serbia|เซอร์เบีย
+Seychelles|เซเชลส์
+Sierra Leone|เซียร์ราลีโอน
+Singapore|สิงคโปร์
+Sint Maarten (Dutch part)|ซินต์มาร์เทิน
+Slovakia|สโลวาเกีย
+Slovenia|สโลวีเนีย
+Solomon Islands|หมู่เกาะโซโลมอน
+Somalia|โซมาเลีย
+South Africa|แอฟริกาใต้
+South Georgia and the South Sandwich Islands|เซาท์จอร์เจียและหมู่เกาะเซาท์แซนด์วิช
+South Sudan|ซูดานใต้
+Spain|สเปน
+Sri Lanka|ศรีลังกา
+Sudan|ซูดาน
+Suriname|ซูรินาเม
+Svalbard and Jan Mayen|สฟาลบาร์และยานไมเอน
+Sweden|สวีเดน
+Switzerland|สวิตเซอร์แลนด์
+Syria|ซีเรีย
+Taiwan|ไต้หวัน
+Tajikistan|ทาจิกิสถาน
+Tanzania|แทนซาเนีย
+Thailand|ไทย
+Timor-Leste|ติมอร์-เลสเต
+Togo|โตโก
+Tokelau|โตเกเลา
+Tonga|ตองกา
+Trinidad and Tobago|ตรินิแดดและโตเบโก
+Tunisia|ตูนิเซีย
+Türkiye|ตุรกี
+Turkmenistan|เติร์กเมนิสถาน
+Turks and Caicos Islands|หมู่เกาะเติกส์และเคคอส
+Tuvalu|ตูวาลู
+Uganda|ยูกันดา
+Ukraine|ยูเครน
+United Arab Emirates|สหรัฐอาหรับเอมิเรตส์
+United Kingdom|สหราชอาณาจักร
+United States|สหรัฐอเมริกา
+United States Minor Outlying Islands|หมู่เกาะเล็กรอบนอกของสหรัฐอเมริกา
+Uruguay|อุรุกวัย
+Uzbekistan|อุซเบกิสถาน
+Vanuatu|วานูอาตู
+Venezuela|เวเนซุเอลา
+Vietnam|เวียดนาม
+Virgin Islands (British)|หมู่เกาะเวอร์จินบริติช
+Virgin Islands (U.S.)|หมู่เกาะเวอร์จินสหรัฐ
+Wallis and Futuna|วาลลิสและฟุตูนา
+Western Sahara|ซาฮาราตะวันตก
+Yemen|เยเมน
+Zambia|แซมเบีย
+Zimbabwe|ซิมบับเว`.split('\n').map(l=>{const [en,th]=l.split('|');return{en:en.trim(),th:th.trim()}})
+ .sort((a,b)=>a.th.localeCompare(b.th,'th'));
+$('#cc').textContent=COUNTRIES.length;
+
+/* ---------- Autocomplete ---------- */
+function setupAC(inp,list,badge){
+  let items=[],act=-1;
+  const norm=s=>s.toLowerCase();
+  function render(){
+    const q=norm(inp.value.trim());
+    list.innerHTML='';act=-1;
+    if(!q){list.style.display='none';items=[];return}
+    const pre=[],mid=[];
+    COUNTRIES.forEach((c,i)=>{
+      const th=norm(c.th),en=norm(c.en);
+      if(th.startsWith(q)||en.startsWith(q))pre.push(i);
+      else if(en.split(/[\s(),\-]+/).some(w=>w.startsWith(q))||(q.length>1&&(th.includes(q)||en.includes(q))))mid.push(i);
+    });
+    items=pre.concat(mid);
+    if(!items.length){list.innerHTML='<div class="ac-empty">ไม่พบประเทศที่ตรงกับที่พิมพ์</div>'}
+    else items.forEach((idx,k)=>{
+      const c=COUNTRIES[idx];const d=document.createElement('div');d.className='ac-item';
+      d.innerHTML=`<span>${c.th}</span><small>${c.en}</small>`;
+      d.addEventListener('mousedown',e=>{e.preventDefault();pick(idx)});
+      list.appendChild(d);
+    });
+    list.style.display='block';
+  }
+  function pick(idx){
+    const c=COUNTRIES[idx];inp.value=`${c.th} (${c.en})`;inp.dataset.sel=idx;
+    badge.textContent='✓ เลือกแล้ว: '+c.th;list.style.display='none';updateHeads();
+  }
+  function hl(){[...list.children].forEach((el,i)=>el.classList.toggle('act',i===act));
+    const el=list.children[act];if(el)el.scrollIntoView({block:'nearest'})}
+  inp.addEventListener('input',()=>{delete inp.dataset.sel;badge.textContent='';render();updateHeads()});
+  inp.addEventListener('focus',()=>{if(inp.value&&!inp.dataset.sel)render()});
+  inp.addEventListener('keydown',e=>{
+    if(!items.length)return;
+    if(e.key==='ArrowDown'){e.preventDefault();act=Math.min(items.length-1,act+1);hl()}
+    else if(e.key==='ArrowUp'){e.preventDefault();act=Math.max(0,act-1);hl()}
+    else if(e.key==='Enter'){e.preventDefault();pick(items[act>=0?act:0])}
+    else if(e.key==='Escape'){list.style.display='none'}
+  });
+  inp.addEventListener('blur',()=>{
+    setTimeout(()=>{list.style.display='none';
+      if(!inp.dataset.sel&&inp.value.trim()){
+        const q=norm(inp.value.trim());const i=COUNTRIES.findIndex(c=>norm(c.th)===q||norm(c.en)===q);if(i>=0)pick(i);
+      }},120);
+  });
+}
+setupAC($('#inpA'),$('#listA'),$('#bdgA'));
+setupAC($('#inpB'),$('#listB'),$('#bdgB'));
+const getSel=inp=>inp.dataset.sel!==undefined?COUNTRIES[+inp.dataset.sel]:null;
+
+/* ---------- Modes / state ---------- */
+const MODES={
+  global:{t:'Elephant Curve ระดับโลก',d:'เส้นโค้งต้นฉบับ Lakner–Milanovic (1988–2008) พร้อมตารางสถิติ ไม่ต้องกรอกข้อมูล',cn:0},
+  vsglobal:{t:'ประเทศ เทียบกับ Elephant Curve โลก',d:'ใส่รายได้ตามกลุ่ม Decile ของประเทศ แล้วเทียบกับเส้นโค้งของโลก',cn:1},
+  gic:{t:'Growth Incidence Curve รายประเทศ',d:'ดูว่าการเติบโตตกอยู่กับกลุ่มรายได้ใดของประเทศ',cn:1},
+  compare:{t:'เปรียบเทียบ 2 ประเทศ',d:'เทียบรูปร่างการเติบโต ความเหลื่อมล้ำ และ Lorenz curve',cn:2}
+};
+const state={mode:null,method:'table',res:null,charts:[]};
+Object.entries(MODES).forEach(([k,m])=>{
+  const b=document.createElement('button');b.className='mode';b.dataset.k=k;
+  b.innerHTML=`<b>${m.t}</b><span>${m.d}</span>`;b.onclick=()=>setMode(k);$('#modes').appendChild(b);
+});
+function setMode(k){
+  state.mode=k;const cn=MODES[k].cn;
+  document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+  $('#secCountry').hidden=cn<1;$('#secData').hidden=cn<1;$('#wrapB').hidden=cn<2;$('#secProc').hidden=false;
+  $('#lblA').textContent=cn===2?'A':'';
+  $('#procNote').textContent=cn===0?'โหมดนี้ใช้ข้อมูลอ้างอิงที่ฝังไว้ในหน้าเว็บ กดประมวลผลได้เลย':'ตรวจสอบประเทศ ปี และตัวเลขให้ครบ แล้วกดประมวลผลข้อมูล';
+  $('#secRes').hidden=true;clearOutputs();hideErr();
+  if(cn>0){buildDataTable();buildTextHint();$('#txt').value=''}
+  updateHeads();
+  setTimeout(()=>(cn>0?$('#secCountry'):$('#secProc')).scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+function updateHeads(){
+  const a=getSel($('#inpA')),b=getSel($('#inpB'));
+  document.querySelectorAll('th.nm').forEach(th=>{
+    const c=+th.dataset.c,s=c?b:a;th.textContent=s?s.th:('ประเทศ '+(MODES[state.mode].cn===2?(c?'B':'A'):''));
+  });
+}
+/* data table */
+function buildDataTable(){
+  const k=MODES[state.mode].cn;
+  let h='<table class="tbl input-tbl"><thead><tr><th rowspan="2">กลุ่มรายได้</th>';
+  for(let c=0;c<k;c++)h+=`<th colspan="2" class="nm" data-c="${c}"></th>`;
+  h+='</tr><tr>';
+  for(let c=0;c<k;c++)h+='<th>รายได้ปีเริ่มต้น</th><th>รายได้ปีสิ้นสุด</th>';
+  h+='</tr></thead><tbody>';
+  for(let r=0;r<10;r++){
+    h+=`<tr><td>D${r+1} <small style="color:#6b7280">${r===0?'จนสุด 10%':r===9?'รวยสุด 10%':''}</small></td>`;
+    for(let c=0;c<k*2;c++)h+=`<td><input type="number" step="any" min="0" data-r="${r}" data-c="${c}"></td>`;
+    h+='</tr>';
+  }
+  $('#tblBox').innerHTML=h+'</tbody></table>';
+}
+function buildTextHint(){
+  const k=MODES[state.mode].cn;
+  $('#txt').placeholder=k===1?'ตัวอย่าง (10 บรรทัด D1→D10: รายได้ปีเริ่มต้น, รายได้ปีสิ้นสุด)\n1.2, 1.6\n1.9, 2.8\n2.5, 3.9\n...':'ตัวอย่าง (10 บรรทัด: A ต้น, A ปลาย, B ต้น, B ปลาย)\n1.2, 1.6, 2.6, 4.1\n1.9, 2.8, 4.2, 6.3\n...';
+  $('#txtHint').textContent=k===1?'แต่ละบรรทัด = 1 กลุ่ม (D1→D10) รูปแบบ: รายได้ปีเริ่มต้น, รายได้ปีสิ้นสุด — คั่นด้วยจุลภาค ช่องว่าง หรือ Tab (ใช้จุดเป็นทศนิยม ห้ามใส่เครื่องหมายคั่นหลักพัน) บรรทัดหัวตารางและคอลัมน์ลำดับ D จะถูกข้ามอัตโนมัติ':'แต่ละบรรทัด = 1 กลุ่ม (D1→D10) รูปแบบ: A ต้น, A ปลาย, B ต้น, B ปลาย — คั่นด้วยจุลภาค ช่องว่าง หรือ Tab (ใช้จุดเป็นทศนิยม ห้ามใส่เครื่องหมายคั่นหลักพัน)';
+}
+$('#mTable').onclick=()=>setMethod('table');$('#mText').onclick=()=>setMethod('text');
+function setMethod(m){state.method=m;$('#mTable').classList.toggle('on',m==='table');$('#mText').classList.toggle('on',m==='text');
+  $('#tblBox').hidden=m!=='table';$('#txtBox').hidden=m!=='text'}
+$('#btnSample').onclick=()=>{
+  const k=MODES[state.mode].cn;if(!k)return;
+  const base=[1.2,1.9,2.5,3.1,3.8,4.7,5.9,7.7,10.8,24.5];
+  const gA=[.35,.48,.55,.60,.52,.38,.22,.15,.20,.58],gB=[.60,.52,.45,.40,.36,.33,.30,.27,.25,.30];
+  const vals=[];
+  for(let r=0;r<10;r++){const row=[base[r],base[r]*(1+gA[r])];if(k===2)row.push(base[r]*2.2,base[r]*2.2*(1+gB[r]));vals.push(row.map(v=>+v.toFixed(2)))}
+  setMethod('table');
+  document.querySelectorAll('input[data-r]').forEach(i=>i.value=vals[+i.dataset.r][+i.dataset.c]);
+  $('#y1').value=2000;$('#y2').value=2020;$('#unit').value='USD PPP ต่อคนต่อวัน';
+  toast('ใส่ข้อมูลตัวอย่างสมมติแล้ว (ไม่ใช่ข้อมูลจริง)');
+};
+$('#btnClear').onclick=()=>{document.querySelectorAll('input[data-r]').forEach(i=>i.value='');$('#txt').value=''};
+
+function readData(k){
+  const cols=k*2,rows=[];
+  if(state.method==='text'){
+    let lines=$('#txt').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    if(!lines.length)throw new Error('ยังไม่ได้วางข้อมูลข้อความ');
+    const parse=l=>l.split(/[\s,;\t|]+/).filter(Boolean).map(Number);
+    if(parse(lines[0]).some(isNaN))lines=lines.slice(1);
+    if(lines.length!==10)throw new Error(`ต้องมีข้อมูล 10 บรรทัด (D1–D10) แต่พบ ${lines.length} บรรทัด`);
+    lines.forEach((l,i)=>{let t=parse(l);
+      if(t.length===cols+1)t=t.slice(1);
+      if(t.length!==cols||t.some(v=>!isFinite(v)))throw new Error(`บรรทัดที่ ${i+1} ต้องมีตัวเลข ${cols} ค่า`);
+      rows.push(t)});
+  }else{
+    for(let r=0;r<10;r++)rows.push(new Array(cols).fill(NaN));
+    document.querySelectorAll('input[data-r]').forEach(i=>{rows[+i.dataset.r][+i.dataset.c]=i.value===''?NaN:Number(i.value)});
+    rows.forEach((row,r)=>row.forEach((v,c)=>{if(!isFinite(v))throw new Error(`กรุณากรอกตัวเลขให้ครบ (ช่องที่ขาด: D${r+1} คอลัมน์ที่ ${c+1})`)}));
+  }
+  rows.forEach((row,r)=>row.forEach(v=>{if(!(v>0))throw new Error(`รายได้ต้องเป็นค่าบวกมากกว่า 0 (พบปัญหาที่ D${r+1})`)}));
+  return rows;
+}
+
+/* ---------- Analysis ---------- */
+const corr=(x,y)=>{const n=x.length,mx=sum(x)/n,my=sum(y)/n;let a=0,b=0,c=0;for(let i=0;i<n;i++){a+=(x[i]-mx)*(y[i]-my);b+=(x[i]-mx)**2;c+=(y[i]-my)**2}return a/Math.sqrt(b*c)};
+function lorenz(a){const t=sum(a);let c=0;return[0,...a.map(v=>(c+=v)/t)]}
+function gini(L){let ar=0;for(let i=1;i<L.length;i++)ar+=(L[i-1]+L[i])/2*0.1;return 1-2*ar}
+function indicators(a){const t=sum(a);return{mean:t/10,gini:gini(lorenz(a)),palma:a[9]/sum(a.slice(0,4)),s80s20:(a[8]+a[9])/(a[0]+a[1]),d10d1:a[9]/a[0],b40:sum(a.slice(0,4))/t*100,t10:a[9]/t*100}}
+function elephantShape(g){
+  let pk=0;for(let i=0;i<=6;i++)if(g[i]>g[pk])pk=i;
+  let tr=pk+1;for(let i=pk+1;i<=8;i++)if(g[i]<g[tr])tr=i;
+  return{pk,tr,ok:(g[pk]-g[tr]>=10)&&(g[9]-g[tr]>=10)};
+}
+function analyze(a1,a2,n){
+  const s1=sum(a1),s2=sum(a2);
+  const rows=a1.map((v,i)=>{const w=a2[i];return{d:i+1,y1:v,y2:w,diff:w-v,g:(w/v-1)*100,ga:(Math.pow(w/v,1/n)-1)*100,sh1:v/s1*100,sh2:w/s2*100,shd:(w/s2-v/s1)*100,gs:(s2-s1)!==0?(w-v)/(s2-s1)*100:NaN}});
+  const g=rows.map(r=>r.g);
+  const i1=indicators(a1),i2=indicators(a2);
+  const meanG=(s2/s1-1)*100,b40G=(sum(a2.slice(0,4))/sum(a1.slice(0,4))-1)*100;
+  const mono=a1.every((v,i)=>i===0||v>=a1[i-1])&&a2.every((v,i)=>i===0||v>=a2[i-1]);
+  return{rows,g,i1,i2,L1:lorenz(a1),L2:lorenz(a2),meanG,meanGa:(Math.pow(s2/s1,1/n)-1)*100,b40G,t10G:g[9],el:elephantShape(g),mono,n,a1,a2};
+}
+
+function clearOutputs(){
+  state.charts.forEach(c=>c.destroy());state.charts=[];
+  $('#tableOut').hidden=true;$('#chartOut').hidden=true;$('#tableCapture').innerHTML='';$('#chartOut').innerHTML='';
+}
+const showErr=m=>{const e=$('#err');e.textContent='⚠ '+m;e.hidden=false;e.scrollIntoView({behavior:'smooth',block:'center'})};
+function hideErr(){$('#err').hidden=true}
+
+$('#btnProc').onclick=()=>{
+  hideErr();const m=state.mode;
+  if(!m)return showErr('กรุณาเลือกรูปแบบการวิเคราะห์ก่อน');
+  const cn=MODES[m].cn;const res={mode:m};
+  try{
+    if(m==='global'){res.p={y1:1988,y2:2008,n:20,unit:'%'}}
+    else{
+      const cs=[];
+      for(let i=0;i<cn;i++){const c=getSel(i?$('#inpB'):$('#inpA'));
+        if(!c)throw new Error(`กรุณาพิมพ์และเลือกชื่อประเทศ${cn>1?' '+(i?'B':'A'):''} จากรายการที่แสดง`);cs.push(c)}
+      if(cn===2&&cs[0]===cs[1])throw new Error('ประเทศ A และ B ต้องไม่ซ้ำกัน');
+      const y1=parseFloat($('#y1').value),y2=parseFloat($('#y2').value);
+      if(!isFinite(y1)||!isFinite(y2)||y2<=y1)throw new Error('กรุณาใส่ปีให้ถูกต้อง โดยปีสิ้นสุดต้องมากกว่าปีเริ่มต้น');
+      const rows=readData(cn);
+      res.p={y1,y2,n:y2-y1,unit:$('#unit').value.trim()||'หน่วย'};
+      res.names=cs.map(c=>c.th);
+      res.an=cs.map((_,c)=>analyze(rows.map(r=>r[2*c]),rows.map(r=>r[2*c+1]),res.p.n));
+    }
+  }catch(e){return showErr(e.message)}
+  state.res=res;clearOutputs();$('#secRes').hidden=false;
+  setTimeout(()=>$('#secRes').scrollIntoView({behavior:'smooth',block:'start'}),50);
+};
+
+/* ---------- TABLE ---------- */
+const safe=s=>s.replace(/[\\\/?*\[\]:]/g,'').slice(0,26);
+function decileTable(name,a,p){
+  let h=`<h3>ตารางสถิติรายกลุ่ม: ${name}</h3><div class="tw"><table class="tbl xl" data-sheet="${safe('กลุ่ม_'+name)}"><thead><tr><th>กลุ่ม</th><th>รายได้ ${p.y1}</th><th>รายได้ ${p.y2}</th><th>เปลี่ยนแปลง</th><th>โตรวม (%)</th><th>โตเฉลี่ย/ปี (%)</th><th>สัดส่วนรายได้ ${p.y1} (%)</th><th>สัดส่วนรายได้ ${p.y2} (%)</th><th>เปลี่ยนสัดส่วน (จุด %)</th><th>ส่วนแบ่งรายได้ส่วนเพิ่ม (%)</th></tr></thead><tbody>`;
+  a.rows.forEach(r=>{h+=`<tr><td>D${r.d}</td><td>${f(r.y1)}</td><td>${f(r.y2)}</td><td class="${cls(r.diff)}">${f(r.diff)}</td><td class="${cls(r.g)}">${f(r.g)}</td><td class="${cls(r.ga)}">${f(r.ga)}</td><td>${f(r.sh1)}</td><td>${f(r.sh2)}</td><td class="${cls(r.shd)}">${f(r.shd)}</td><td>${f(r.gs)}</td></tr>`});
+  return h+'</tbody></table></div>';
+}
+function summaryTable(name,a,p){
+  const rows=[['รายได้เฉลี่ย',a.i1.mean,a.i2.mean],['ดัชนี Gini (จาก Decile)',a.i1.gini,a.i2.gini],['Palma ratio (Top10 ÷ Bottom40)',a.i1.palma,a.i2.palma],['S80/S20',a.i1.s80s20,a.i2.s80s20],['D10/D1',a.i1.d10d1,a.i2.d10d1],['ส่วนแบ่งรายได้ Bottom 40% (%)',a.i1.b40,a.i2.b40],['ส่วนแบ่งรายได้ Top 10% (%)',a.i1.t10,a.i2.t10]];
+  let h=`<h3>ตัวชี้วัดภาพรวมและความเหลื่อมล้ำ: ${name}</h3><div class="tw"><table class="tbl xl" data-sheet="${safe('ตัวชี้วัด_'+name)}"><thead><tr><th>ตัวชี้วัด</th><th>${p.y1}</th><th>${p.y2}</th><th>เปลี่ยนแปลง</th></tr></thead><tbody>`;
+  rows.forEach(r=>{const dd=r[2]-r[1];const worse=!r[0].startsWith('รายได้เฉลี่ย')&&!r[0].includes('Bottom');
+    h+=`<td class="l">${r[0]}</td><td>${f(r[1],3)}</td><td>${f(r[2],3)}</td><td class="${cls(dd)}">${f(dd,3)}</td></tr>`.replace(/^/,'<tr>')});
+  h+='</tbody></table></div>';
+  const g=a.g,e=a.el;
+  const st=[['การเติบโตของรายได้เฉลี่ยรวม (%)',a.meanG],['การเติบโตเฉลี่ยต่อปีของรายได้เฉลี่ย (%)',a.meanGa],['การเติบโต Bottom 40% (%)',a.b40G],['การเติบโต Top 10% (%)',a.t10G],['Bottom 40% เติบโตเร็วกว่าค่าเฉลี่ย (จุด %)',a.b40G-a.meanG],['กลุ่มที่โตเร็วสุด (D'+(g.indexOf(Math.max(...g))+1)+') (%)',Math.max(...g)],['กลุ่มที่โตช้าสุด (D'+(g.indexOf(Math.min(...g))+1)+') (%)',Math.min(...g)],['ตำแหน่งยอด "หลังช้าง" (Decile)',e.pk+1],['ตำแหน่งร่อง "คอช้าง" (Decile)',e.tr+1]];
+  h+=`<h3>สถิติการเติบโต (Growth Incidence): ${name}</h3><div class="tw"><table class="tbl xl" data-sheet="${safe('การเติบโต_'+name)}"><thead><tr><th>สถิติ</th><th>ค่า</th></tr></thead><tbody>`;
+  st.forEach(s=>{h+=`<tr><td class="l">${s[0]}</td><td class="${s[0].includes('Decile')?'':cls(s[1])}">${f(s[1],s[0].includes('Decile')?0:2)}</td></tr>`});
+  h+=`<tr><td class="l">รูปร่างเข้าข่าย "Elephant Curve"</td><td><span class="tag ${e.ok?'y':'n'}">${e.ok?'เข้าข่าย':'ไม่เข้าข่าย'}</span></td></tr>`;
+  return h+'</tbody></table></div>';
+}
+function explainSingle(name,a,p,mode){
+  const g=a.g,e=a.el;
+  let shape;
+  if(e.ok)shape=`รูปร่างของ <b>${name}</b> <b>เข้าข่ายลักษณะ "ช้าง"</b>: กลุ่ม D${e.pk+1} โตสูงสุดในช่วงกลาง (${f(g[e.pk],1)}%) เป็น "หลังช้าง" จากนั้นการเติบโตลดลงเหลือ ${f(g[e.tr],1)}% ที่ D${e.tr+1} เป็น "คอ/ร่องหลังหัวช้าง" และกลับพุ่งขึ้นที่ D10 ถึง ${f(g[9],1)}% เป็น "งวงช้าง"`;
+  else{const pp=a.b40G>a.meanG?'การเติบโตเอียงไปทางกลุ่มรายได้ต่ำ (pro-poor)':'การเติบโตเอียงไปทางกลุ่มรายได้สูง (pro-rich)';
+    shape=`รูปร่างของ <b>${name}</b> <b>ไม่เข้าข่ายลักษณะ "ช้าง"</b> ตามเกณฑ์ง่าย ๆ ที่ใช้ (ยอดกลาง–ร่อง–งวง ต่างกันอย่างน้อย 10 จุด %) โดยภาพรวม ${pp}`}
+  const gi=a.i2.gini-a.i1.gini;
+  return `<div class="expl">
+  <h4>คำอธิบายตาราง</h4><ul>
+  <li><b>กลุ่ม D1–D10</b>: แบ่งประชากรเป็น 10 กลุ่มเท่า ๆ กันตามรายได้ D1 = จนสุด 10%, D10 = รวยสุด 10% ค่ารายได้คือรายได้เฉลี่ยของกลุ่มนั้น (หน่วย: ${p.unit})</li>
+  <li><b>โตรวม (%)</b> = (รายได้ปี ${p.y2} ÷ รายได้ปี ${p.y1} − 1) × 100 — คือค่าบนแกน Y ของ Growth Incidence / Elephant Curve</li>
+  <li><b>โตเฉลี่ย/ปี (%)</b> = ((รายได้ปลาย ÷ รายได้ต้น)<sup>1/${p.n}</sup> − 1) × 100 (CAGR ${p.n} ปี)</li>
+  <li><b>สัดส่วนรายได้</b> = รายได้ของกลุ่ม ÷ รายได้รวมทุกกลุ่ม; <b>เปลี่ยนสัดส่วน</b> = จุดเปอร์เซ็นต์ที่เปลี่ยนไป (บวก = ส่วนแบ่งเพิ่มขึ้น)</li>
+  <li><b>ส่วนแบ่งรายได้ส่วนเพิ่ม</b> = (รายได้ที่เพิ่มของกลุ่ม ÷ รายได้ที่เพิ่มของทุกกลุ่มรวมกัน) × 100 บอกว่า "ใครได้เค้กก้อนที่โตขึ้นเท่าไร"</li>
+  <li><b>Gini</b> คำนวณจากเส้น Lorenz ของ 10 กลุ่ม (ค่า 0 = เท่าเทียม, 1 = เหลื่อมล้ำสูงสุด) จึงต่ำกว่าค่าจริงเล็กน้อยเพราะไม่รวมความเหลื่อมล้ำภายในแต่ละกลุ่ม; <b>Palma</b> = ส่วนแบ่ง Top 10% ÷ Bottom 40%; <b>S80/S20</b> = รายได้ 20% บนสุด ÷ 20% ล่างสุด</li>
+  </ul>
+  <h4>การตีความผลลัพธ์</h4>
+  <p>รายได้เฉลี่ยโตรวม <b>${f(a.meanG,1)}%</b> (${f(a.meanGa,2)}%/ปี) ระหว่าง ${p.y1}–${p.y2} กลุ่มที่โตเร็วสุดคือ D${g.indexOf(Math.max(...g))+1} (${f(Math.max(...g),1)}%) ส่วนกลุ่มที่โตช้าสุดคือ D${g.indexOf(Math.min(...g))+1} (${f(Math.min(...g),1)}%)</p>
+  <p>Bottom 40% โต ${f(a.b40G,1)}% ${a.b40G>=a.meanG?'สูงกว่า':'ต่ำกว่า'}ค่าเฉลี่ย ${f(Math.abs(a.b40G-a.meanG),1)} จุด % ส่วน Top 10% โต ${f(a.t10G,1)}%</p>
+  <p>Gini ${gi>0?'เพิ่มขึ้น':'ลดลง'} จาก ${f(a.i1.gini,3)} เป็น ${f(a.i2.gini,3)} (${gi>0?'ความเหลื่อมล้ำสูงขึ้น':'ความเหลื่อมล้ำลดลง'}) และ Palma ratio ${f(a.i1.palma,2)} → ${f(a.i2.palma,2)}</p>
+  <p>${shape}</p>
+  ${a.mono?'':'<p><b>หมายเหตุ:</b> ข้อมูลที่กรอกบางกลุ่มไม่เรียงจากน้อยไปมาก ควรตรวจสอบว่าเรียง D1→D10 ถูกต้อง</p>'}
+  <p><b>ข้อควรระวัง:</b> เป็นการเปรียบเทียบ "กลุ่มรายได้ตามตำแหน่ง" ในแต่ละปี (anonymous) ไม่ได้ติดตามบุคคลคนเดิม และผลขึ้นกับคุณภาพ/นิยามข้อมูลรายได้ที่ผู้ใช้กรอก</p>
+  </div>`;
+}
+function renderTable(){
+  const r=state.res,p=r.p;let h='';const cap=$('#tableCapture');
+  if(r.mode==='global'){
+    h+=`<h2>Elephant Curve ระดับโลก (Lakner &amp; Milanovic)</h2><div class="meta">การเติบโตของรายได้จริงต่อหัวของแต่ละ percentile ของการกระจายรายได้โลก ช่วง 1988–2008 (ค่าประมาณจากกราฟต้นฉบับ)</div>`;
+    const desc=q=>q<=15?'ยากจนที่สุดของโลก':q<=35?'รายได้ต่ำ (ชนบทเอเชีย/แอฟริกา)':q<=60?'ชนชั้นกลางใหม่ของโลก (เอเชียเกิดใหม่) — "หลังช้าง"':q<=75?'การเติบโตเริ่มชะลอ — "ลาดหลัง"':q<=90?'ชนชั้นกลางล่างของประเทศร่ำรวย — "คอช้าง/ร่อง"':q<100?'กลุ่มบนที่เริ่มกลับมาโตเร็ว':'Top 1% ของโลก — "งวงช้าง"';
+    h+='<h3>ตารางสถิติ Elephant Curve</h3><div class="tw"><table class="tbl xl" data-sheet="ElephantCurve"><thead><tr><th>Percentile โลก</th><th>โตรวม 1988–2008 (%)</th><th>โตเฉลี่ย/ปี (%)</th><th>ตำแหน่งบนรูปช้าง</th></tr></thead><tbody>';
+    GLOBAL_P.forEach((q,i)=>{const ga=(Math.pow(1+GLOBAL_G[i]/100,1/20)-1)*100;h+=`<tr><td>${q}${q===100?' (Top 1%)':''}</td><td class="${cls(GLOBAL_G[i])}">${f(GLOBAL_G[i],1)}</td><td class="${cls(ga)}">${f(ga,2)}</td><td class="l">${desc(q)}</td></tr>`});
+    h+='</tbody></table></div>';
+    const mx=Math.max(...GLOBAL_G),mn=Math.min(...GLOBAL_G.slice(9,19));
+    const st=[['ยอดสูงสุดของ "หลังช้าง" (%)',mx,'P'+GLOBAL_P[GLOBAL_G.indexOf(mx)]],['จุดต่ำสุดของ "คอช้าง" (%)',mn,'P'+GLOBAL_P[9+GLOBAL_G.slice(9,19).indexOf(mn)]],['Top 1% (%)',GLOBAL_G[19],'P100'],['มัธยฐานโลก P50 (%)',GLOBAL_G[9],'P50'],['Bottom 10% เฉลี่ย (P5,P10) (%)',(GLOBAL_G[0]+GLOBAL_G[1])/2,'P5–P10'],['ส่วนต่างหลังช้าง − คอช้าง (จุด %)',mx-mn,'']];
+    h+='<h3>สถิติสรุป</h3><div class="tw"><table class="tbl xl" data-sheet="สถิติสรุป"><thead><tr><th>ตัวชี้วัด</th><th>ค่า</th><th>ตำแหน่ง</th></tr></thead><tbody>';
+    st.forEach(s=>h+=`<tr><td class="l">${s[0]}</td><td class="${cls(s[1])}">${f(s[1],1)}</td><td>${s[2]}</td></tr>`);
+    h+='</tbody></table></div>';
+    h+=`<div class="expl"><h4>คำอธิบายตาราง</h4><ul><li><b>Percentile โลก</b>: ตำแหน่งของบุคคลในการกระจายรายได้ของประชากรโลกทั้งหมด (P5 = จนสุดแถวล่าง, P100 = Top 1%)</li><li><b>โตรวม</b>: การเปลี่ยนแปลงรายได้จริงต่อหัว (ปรับ PPP) ของ percentile นั้นระหว่างปี 1988 ถึง 2008 ส่วน <b>โตเฉลี่ย/ปี</b> แปลงเป็นอัตรารายปี 20 ปี</li><li>ตัวเลขเป็น <b>ค่าประมาณจากกราฟต้นฉบับ</b> ไม่ใช่ตัวเลขทางการ</li></ul>
+    <h4>การตีความ</h4><p>รูปทรงช้างเกิดจาก 3 ส่วน: <b>หลังช้าง</b> — กลุ่มรอบมัธยฐานโลกโตสูงสุดราว ${f(mx,0)}% (ส่วนใหญ่ชนชั้นกลางใหม่ในเอเชีย โดยเฉพาะจีนและอินเดีย); <b>ร่องคอช้าง</b> — กลุ่มราว P80–P90 ซึ่งตรงกับชนชั้นกลางล่างของประเทศร่ำรวยแทบไม่โตเลย (ต่ำสุดราว ${f(mn,0)}%); <b>งวงช้าง</b> — Top 1% ที่รายได้พุ่งอีกครั้งราว ${f(GLOBAL_G[19],0)}% ผลสรุปของ Lakner &amp; Milanovic คือโลกาภิวัตน์ช่วงนี้ลดความเหลื่อมล้ำ "ระหว่างประเทศ" แต่ไม่ได้ลดความเหลื่อมล้ำภายในหลายประเทศ</p></div>`;
+  }else if(r.mode==='compare'){
+    const [A,B]=r.an,[na,nb]=r.names;
+    h+=`<h2>เปรียบเทียบ ${na} กับ ${nb}</h2><div class="meta">ช่วง ${p.y1}–${p.y2} (${p.n} ปี) • หน่วยรายได้: ${p.unit}</div>`;
+    const rows=[['การเติบโตของรายได้เฉลี่ย (%)',A.meanG,B.meanG],['โตเฉลี่ยต่อปี (%)',A.meanGa,B.meanGa],['การเติบโต Bottom 40% (%)',A.b40G,B.b40G],['การเติบโต Top 10% (%)',A.t10G,B.t10G],['Bottom 40% − ค่าเฉลี่ย (จุด %)',A.b40G-A.meanG,B.b40G-B.meanG],['Gini '+p.y1,A.i1.gini,B.i1.gini],['Gini '+p.y2,A.i2.gini,B.i2.gini],['ΔGini',A.i2.gini-A.i1.gini,B.i2.gini-B.i1.gini],['Palma '+p.y2,A.i2.palma,B.i2.palma],['S80/S20 '+p.y2,A.i2.s80s20,B.i2.s80s20]];
+    h+=`<h3>ตารางเปรียบเทียบตัวชี้วัดหลัก</h3><div class="tw"><table class="tbl xl" data-sheet="เปรียบเทียบ"><thead><tr><th>ตัวชี้วัด</th><th>${na}</th><th>${nb}</th><th>ส่วนต่าง (A−B)</th></tr></thead><tbody>`;
+    rows.forEach(x=>h+=`<tr><td class="l">${x[0]}</td><td>${f(x[1],3)}</td><td>${f(x[2],3)}</td><td class="${cls(x[1]-x[2])}">${f(x[1]-x[2],3)}</td></tr>`);
+    h+=`<tr><td class="l">รูปร่าง "Elephant Curve"</td><td><span class="tag ${A.el.ok?'y':'n'}">${A.el.ok?'เข้าข่าย':'ไม่เข้าข่าย'}</span></td><td><span class="tag ${B.el.ok?'y':'n'}">${B.el.ok?'เข้าข่าย':'ไม่เข้าข่าย'}</span></td><td></td></tr></tbody></table></div>`;
+    const cr=corr(A.g,B.g);
+    h+=`<h3>การเติบโตรายกลุ่ม Decile เทียบกัน (%)</h3><div class="tw"><table class="tbl xl" data-sheet="เติบโตรายกลุ่ม"><thead><tr><th>กลุ่ม</th><th>${na}</th><th>${nb}</th><th>ส่วนต่าง (จุด %)</th></tr></thead><tbody>`;
+    A.g.forEach((v,i)=>h+=`<tr><td>D${i+1}</td><td class="${cls(v)}">${f(v)}</td><td class="${cls(B.g[i])}">${f(B.g[i])}</td><td class="${cls(v-B.g[i])}">${f(v-B.g[i])}</td></tr>`);
+    h+=`<tr><td class="l"><b>สหสัมพันธ์ของรูปร่างเส้นโค้ง (Pearson r)</b></td><td colspan="3"><b>${f(cr,3)}</b></td></tr></tbody></table></div>`;
+    h+=decileTable(na,A,p)+decileTable(nb,B,p);
+    const lead=A.meanG>B.meanG?na:nb;
+    h+=`<div class="expl"><h4>คำอธิบายตาราง</h4><ul><li>ตารางแรกเทียบตัวชี้วัดสรุป: อัตราเติบโต ความเหลื่อมล้ำ (Gini, Palma, S80/S20) และการเติบโตของกลุ่มล่าง 40% เทียบกลุ่มบน 10%</li><li><b>Pearson r</b> บอกความคล้ายของ "รูปร่าง" เส้นการเติบโตรายกลุ่ม (+1 = รูปร่างเหมือนกัน, 0 = ไม่สัมพันธ์, −1 = สวนทาง) ไม่ได้บอกระดับการเติบโต</li><li>ตารางรายกลุ่มของแต่ละประเทศมีวิธีคำนวณเหมือนกัน: โตรวม = (ปลาย ÷ ต้น − 1) × 100, ส่วนแบ่งรายได้ส่วนเพิ่มบอกว่าแต่ละกลุ่มได้รับรายได้ที่เพิ่มกี่ %</li></ul>
+    <h4>การตีความผลลัพธ์</h4><p>รายได้เฉลี่ยของ <b>${lead}</b> โตเร็วกว่า (${f(Math.max(A.meanG,B.meanG),1)}% เทียบกับ ${f(Math.min(A.meanG,B.meanG),1)}%) ความเหลื่อมล้ำแบบ Gini ของ ${na} ${A.i2.gini>A.i1.gini?'เพิ่มขึ้น':'ลดลง'} (${f(A.i1.gini,3)}→${f(A.i2.gini,3)}) ขณะที่ ${nb} ${B.i2.gini>B.i1.gini?'เพิ่มขึ้น':'ลดลง'} (${f(B.i1.gini,3)}→${f(B.i2.gini,3)}) รูปร่างเส้นการเติบโตของทั้งสองประเทศมีสหสัมพันธ์ r = ${f(cr,2)}</p>
+    <p><b>ข้อควรระวัง:</b> หากทั้งสองประเทศใช้หน่วยรายได้ต่างกัน ควรเปรียบเทียบจากอัตราการเติบโตและสัดส่วน ไม่ใช่ระดับรายได้โดยตรง</p></div>`;
+  }else{
+    const a=r.an[0],nm=r.names[0];
+    h+=`<h2>${r.mode==='vsglobal'?'Elephant Curve: '+nm+' เทียบกับโลก':'Growth Incidence Curve: '+nm}</h2><div class="meta">ช่วง ${p.y1}–${p.y2} (${p.n} ปี) • หน่วยรายได้: ${p.unit}</div>`;
+    h+=decileTable(nm,a,p)+summaryTable(nm,a,p);
+    let extra='';
+    if(r.mode==='vsglobal'){
+      const cr=corr(a.g,GDEC);
+      h+=`<h3>เทียบกับ Elephant Curve ระดับโลก (1988–2008)</h3><div class="tw"><table class="tbl xl" data-sheet="เทียบโลก"><thead><tr><th>กลุ่ม</th><th>Percentile โลกที่ใช้เทียบ</th><th>${nm} โตรวม (%)</th><th>โลก (ประมาณ) (%)</th><th>ส่วนต่าง (จุด %)</th></tr></thead><tbody>`;
+      a.g.forEach((v,i)=>h+=`<tr><td>D${i+1}</td><td>P${5+10*i}</td><td class="${cls(v)}">${f(v)}</td><td class="${cls(GDEC[i])}">${f(GDEC[i])}</td><td class="${cls(v-GDEC[i])}">${f(v-GDEC[i])}</td></tr>`);
+      h+=`<tr><td class="l" colspan="2"><b>Pearson r (รูปร่างเส้นโค้ง)</b></td><td colspan="3"><b>${f(cr,3)}</b></td></tr></tbody></table></div>`;
+      extra=`<div class="expl" style="margin-top:10px"><h4>คำอธิบายตารางเปรียบเทียบกับโลก</h4><ul><li>ใช้เส้น Elephant Curve โลกที่ percentile กลางของแต่ละ Decile (P5, P15, …, P95) มาเทียบกับการเติบโตของ Decile ของประเทศ</li><li><b>ข้อควรระวัง:</b> แกน X ต่างกันโดยแนวคิด — ของโลกคือตำแหน่งในการกระจายรายได้โลก ของประเทศคือตำแหน่งภายในประเทศ และช่วงเวลาอาจไม่ตรงกับ 1988–2008 จึงเป็นการเทียบ "รูปร่าง" เป็นหลัก</li></ul><p>รูปร่างการเติบโตของ ${nm} ${Math.abs(cr)<.3?'ไม่ค่อยสัมพันธ์':cr>0?'คล้าย':'สวนทาง'}กับเส้นโลก (r = ${f(cr,2)})</p></div>`;
+    }
+    h+=explainSingle(nm,a,p,r.mode)+extra;
+  }
+  cap.innerHTML=h;$('#tableOut').hidden=false;
+  setTimeout(()=>$('#tableOut').scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+$('#btnTable').onclick=renderTable;
+
+/* download table */
+$('#dlTblPng').onclick=async()=>{
+  const el=$('#tableCapture');el.classList.add('capturing');
+  try{const cv=await html2canvas(el,{scale:2,backgroundColor:'#ffffff',windowWidth:Math.max(el.scrollWidth,1100)});
+    const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='elephant_curve_table.png';a.click()}
+  catch(e){toast('สร้างรูปภาพไม่สำเร็จ: '+e.message)}finally{el.classList.remove('capturing')}
+};
+$('#dlTblXls').onclick=()=>{
+  try{
+    const wb=XLSX.utils.book_new(),used=new Set();
+    $('#tableCapture').querySelectorAll('table.xl').forEach((t,i)=>{
+      let nm=t.dataset.sheet||('Sheet'+(i+1)),k=nm,c=2;while(used.has(k))k=nm.slice(0,22)+'_'+c++;used.add(k);
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.table_to_sheet(t),k);
+    });
+    const ex=[...$('#tableCapture').querySelectorAll('.expl li,.expl p')].map(e=>[e.textContent.trim()]);
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['คำอธิบาย'],...ex]),'คำอธิบาย');
+    XLSX.writeFile(wb,'elephant_curve_analysis.xlsx');
+  }catch(e){toast('สร้างไฟล์ Excel ไม่สำเร็จ: '+e.message)}
+};
+
+/* ---------- CHARTS ---------- */
+Chart.register(ChartDataLabels,{id:'whiteBg',beforeDraw(c){const x=c.ctx;x.save();x.globalCompositeOperation='destination-over';x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.restore()}});
+Chart.defaults.font.family="'Sarabun',sans-serif";Chart.defaults.font.size=13;Chart.defaults.devicePixelRatio=2;
+
+const ax=(xt,yt)=>({x:{title:{display:true,text:xt},grid:{display:false}},y:{title:{display:true,text:yt},grid:{color:c=>c.tick&&c.tick.value===0?'#333':'#e5e7eb'}}});
+const lineDs=(label,data,c,extra={})=>Object.assign({label,data,borderColor:c,backgroundColor:al(c,.15),borderWidth:3,tension:.35,pointRadius:4,pointBackgroundColor:c},extra);
+const barDs=(label,data,c)=>({label,data,backgroundColor:al(c,.82),borderColor:c,borderWidth:1.5,borderRadius:4});
+const sgnCols=g=>g.map(v=>v>=0?al('#2f9e44',.82):al('#e03131',.82));
+const LAB=Array.from({length:11},(_,i)=>(i*10)+'%');
+
+function singleSpecs(r){
+  const a=r.an[0],nm=r.names[0],p=r.p,unit=p.unit,sub=`${nm} • ${p.y1}→${p.y2}`,g=a.g,S=[];
+  const ds=[lineDs(`การเติบโตของ ${nm} (%)`,g,PAL[0],{fill:true,pointRadius:5})];
+  if(r.mode==='vsglobal')ds.push(lineDs('Elephant Curve โลก 1988–2008 (ประมาณ)',GDEC,'#6b7280',{borderDash:[7,5],borderWidth:2,pointRadius:3,backgroundColor:'transparent'}));
+  S.push({title:r.mode==='vsglobal'?'Elephant Curve: ประเทศ vs โลก':'Growth Incidence Curve',sub:r.mode==='vsglobal'?sub+' (โลกเทียบที่ percentile กลาง decile)':sub,type:'line',data:{labels:DEC,datasets:ds},scales:ax('กลุ่มรายได้ (Decile) จนสุด → รวยสุด','โตรวมของรายได้ (%)')});
+  S.push({title:'การเติบโตของรายได้ตามกลุ่ม (แท่ง)',sub,type:'bar',legend:false,data:{labels:DEC,datasets:[{label:'โตรวม (%)',data:g,backgroundColor:sgnCols(g),borderRadius:4}]},scales:ax('กลุ่มรายได้ (Decile)','โตรวม (%)')});
+  S.push({title:'ระดับรายได้เฉลี่ยของแต่ละกลุ่ม',sub,type:'bar',fmt:v=>v.toFixed(1),data:{labels:DEC,datasets:[barDs('ปี '+p.y1,a.rows.map(x=>x.y1),PAL[7]),barDs('ปี '+p.y2,a.rows.map(x=>x.y2),PAL[0])]},scales:ax('กลุ่มรายได้ (Decile)','รายได้ ('+unit+')')});
+  S.push({title:'เส้น Lorenz ก่อน-หลัง',sub,type:'line',fmt:v=>v.toFixed(0),data:{labels:LAB,datasets:[lineDs('เส้นเท่าเทียมสมบูรณ์',LAB.map((_,i)=>i*10),'#9ca3af',{borderDash:[6,5],pointRadius:0,borderWidth:2,backgroundColor:'transparent'}),lineDs(`ปี ${p.y1} (Gini ${f(a.i1.gini,3)})`,a.L1.map(v=>v*100),PAL[7],{tension:0,backgroundColor:'transparent'}),lineDs(`ปี ${p.y2} (Gini ${f(a.i2.gini,3)})`,a.L2.map(v=>v*100),PAL[0],{tension:0,backgroundColor:'transparent'})]},scales:ax('สัดส่วนประชากรสะสม (จนสุด → รวยสุด)','สัดส่วนรายได้สะสม (%)')});
+  S.push({title:'ส่วนแบ่งรายได้ของแต่ละกลุ่ม',sub,type:'bar',data:{labels:DEC,datasets:[barDs('ปี '+p.y1,a.rows.map(x=>x.sh1),PAL[7]),barDs('ปี '+p.y2,a.rows.map(x=>x.sh2),PAL[1])]},scales:ax('กลุ่มรายได้ (Decile)','สัดส่วนรายได้ (%)')});
+  const pos=a.rows.map(x=>Math.max(0,x.diff)),sp=sum(pos);
+  if(sp>0)S.push({title:'ใครได้รับรายได้ส่วนเพิ่ม (เฉพาะกลุ่มที่รายได้เพิ่ม)',sub,type:'doughnut',pie:true,data:{labels:DEC,datasets:[{data:pos.map(v=>v/sp*100),backgroundColor:DEC.map((_,i)=>COL10(i))}]}});
+  S.push({title:'โตเฉลี่ยต่อปี (เรดาร์)',sub,type:'radar',data:{labels:DEC,datasets:[lineDs('CAGR (%)',a.rows.map(x=>x.ga),PAL[4],{fill:true})]}});
+  S.push({title:'รายได้ที่เปลี่ยน (แท่ง) และโตรวม % (เส้น)',sub,type:'bar',data:{labels:DEC,datasets:[Object.assign(barDs('เปลี่ยนแปลง ('+unit+')',a.rows.map(x=>x.diff),PAL[6]),{yAxisID:'y',order:2}),lineDs('โตรวม (%)',g,PAL[0],{type:'line',yAxisID:'y1',order:1,backgroundColor:'transparent'})]},scales:{x:{grid:{display:false},title:{display:true,text:'กลุ่มรายได้ (Decile)'}},y:{title:{display:true,text:'เปลี่ยนแปลง ('+unit+')'},position:'left'},y1:{title:{display:true,text:'โตรวม (%)'},position:'right',grid:{drawOnChartArea:false}}}});
+  S.push({title:'ส่วนแบ่งรายได้ปีสิ้นสุด (วงกลม)',sub,type:'pie',pie:true,data:{labels:DEC,datasets:[{data:a.rows.map(x=>x.sh2),backgroundColor:DEC.map((_,i)=>COL10(i))}]}});
+  return S;
+}
+function compareSpecs(r){
+  const [A,B]=r.an,[na,nb]=r.names,p=r.p,sub=`${na} vs ${nb} • ${p.y1}→${p.y2}`,S=[];
+  S.push({title:'Growth Incidence Curve เปรียบเทียบ',sub,type:'line',data:{labels:DEC,datasets:[lineDs(na,A.g,PAL[0]),lineDs(nb,B.g,PAL[1])]},scales:ax('กลุ่มรายได้ (Decile)','โตรวมของรายได้ (%)')});
+  S.push({title:'การเติบโตรายกลุ่ม (แท่งเทียบกัน)',sub,type:'bar',data:{labels:DEC,datasets:[barDs(na,A.g,PAL[0]),barDs(nb,B.g,PAL[1])]},scales:ax('กลุ่มรายได้ (Decile)','โตรวม (%)')});
+  S.push({title:'เส้น Lorenz เปรียบเทียบ',sub,type:'line',fmt:v=>v.toFixed(0),data:{labels:LAB,datasets:[lineDs('เท่าเทียมสมบูรณ์',LAB.map((_,i)=>i*10),'#9ca3af',{borderDash:[6,5],pointRadius:0,borderWidth:2,backgroundColor:'transparent'}),lineDs(`${na} ${p.y1}`,A.L1.map(v=>v*100),al(PAL[0],.55),{tension:0,borderDash:[4,3],backgroundColor:'transparent'}),lineDs(`${na} ${p.y2}`,A.L2.map(v=>v*100),PAL[0],{tension:0,backgroundColor:'transparent'}),lineDs(`${nb} ${p.y1}`,B.L1.map(v=>v*100),al(PAL[1],.55),{tension:0,borderDash:[4,3],backgroundColor:'transparent'}),lineDs(`${nb} ${p.y2}`,B.L2.map(v=>v*100),PAL[1],{tension:0,backgroundColor:'transparent'})]},scales:ax('สัดส่วนประชากรสะสม','สัดส่วนรายได้สะสม (%)')});
+  S.push({title:'โตเฉลี่ยต่อปี (เรดาร์)',sub,type:'radar',data:{labels:DEC,datasets:[lineDs(na,A.rows.map(x=>x.ga),PAL[0],{fill:true}),lineDs(nb,B.rows.map(x=>x.ga),PAL[1],{fill:true})]}});
+  S.push({title:'ส่วนแบ่งรายได้ปีสิ้นสุด',sub,type:'bar',data:{labels:DEC,datasets:[barDs(na,A.rows.map(x=>x.sh2),PAL[0]),barDs(nb,B.rows.map(x=>x.sh2),PAL[1])]},scales:ax('กลุ่มรายได้ (Decile)','สัดส่วนรายได้ (%)')});
+  S.push({title:'รายได้สัมพัทธ์ปีสิ้นสุด (ค่าเฉลี่ยประเทศ = 100)',sub,type:'bar',fmt:v=>v.toFixed(0),data:{labels:DEC,datasets:[barDs(na,A.rows.map(x=>x.y2/A.i2.mean*100),PAL[0]),barDs(nb,B.rows.map(x=>x.y2/B.i2.mean*100),PAL[1])]},scales:ax('กลุ่มรายได้ (Decile)','ดัชนีรายได้สัมพัทธ์')});
+  S.push({title:'ดัชนี Gini (×100) ก่อน-หลัง',sub,type:'bar',data:{labels:['ปี '+p.y1,'ปี '+p.y2],datasets:[barDs(na,[A.i1.gini*100,A.i2.gini*100],PAL[0]),barDs(nb,[B.i1.gini*100,B.i2.gini*100],PAL[1])]},scales:ax('','Gini × 100')});
+  S.push({title:'การเติบโต: ค่าเฉลี่ย vs Bottom 40% vs Top 10%',sub,type:'bar',data:{labels:['ค่าเฉลี่ย','Bottom 40%','Top 10%'],datasets:[barDs(na,[A.meanG,A.b40G,A.t10G],PAL[0]),barDs(nb,[B.meanG,B.b40G,B.t10G],PAL[1])]},scales:ax('','โตรวม (%)')});
+  [[A,na],[B,nb]].forEach(([a,n])=>{const pos=a.rows.map(x=>Math.max(0,x.diff)),sp=sum(pos);
+    if(sp>0)S.push({title:'ส่วนแบ่งรายได้ที่เพิ่ม: '+n,sub:`${p.y1}→${p.y2}`,type:'doughnut',pie:true,data:{labels:DEC,datasets:[{data:pos.map(v=>v/sp*100),backgroundColor:DEC.map((_,i)=>COL10(i))}]}})});
+  return S;
+}
+function globalSpecs(){
+  const L=GLOBAL_P.map(String),sub='Lakner & Milanovic (2016) • 1988–2008 • ค่าประมาณ',S=[];
+  S.push({title:'Elephant Curve ระดับโลก',sub,type:'line',data:{labels:L,datasets:[lineDs('โตรวมของรายได้จริง 1988–2008 (%)',GLOBAL_G,PAL[0],{fill:true,pointRadius:5})]},scales:ax('Percentile ของการกระจายรายได้โลก (จนสุด → รวยสุด)','โตรวมของรายได้จริง (%)')});
+  S.push({title:'การเติบโตรายกลุ่ม Percentile (แท่ง)',sub,type:'bar',legend:false,data:{labels:L,datasets:[{label:'โตรวม (%)',data:GLOBAL_G,backgroundColor:sgnCols(GLOBAL_G),borderRadius:3}]},scales:ax('Percentile โลก','โตรวม (%)')});
+  S.push({title:'โตเฉลี่ยต่อปี (CAGR 20 ปี)',sub,type:'line',fmt:v=>v.toFixed(2),data:{labels:L,datasets:[lineDs('โตเฉลี่ย/ปี (%)',GLOBAL_G.map(v=>(Math.pow(1+v/100,1/20)-1)*100),PAL[1],{fill:true})]},scales:ax('Percentile โลก','โตเฉลี่ย/ปี (%)')});
+  S.push({title:'เรดาร์ของ Elephant Curve',sub,type:'radar',data:{labels:L.map(x=>'P'+x),datasets:[lineDs('โตรวม (%)',GLOBAL_G,PAL[4],{fill:true})]}});
+  S.push({title:'Polar area ของการเติบโต',sub,type:'polarArea',pie:true,data:{labels:L.map(x=>'P'+x),datasets:[{data:GLOBAL_G.map(v=>Math.max(0,v)),backgroundColor:GLOBAL_G.map((_,i)=>COL10(i%10))}]}});
+  return S;
+}
+function buildSpecs(r){return r.mode==='global'?globalSpecs(r):r.mode==='compare'?compareSpecs(r):singleSpecs(r)}
+
+$('#btnChart').onclick=()=>{
+  state.charts.forEach(c=>c.destroy());state.charts=[];
+  const out=$('#chartOut');out.innerHTML='';out.hidden=false;
+  buildSpecs(state.res).forEach((s,i)=>{
+    const card=document.createElement('div');card.className='cc-card';
+    card.innerHTML=`<div class="cc-head"><button class="btn sm ghost lbl">ตัวเลขบนกราฟ: ปิด</button><button class="btn sm green dl">⬇ ดาวน์โหลด PNG</button></div><div class="cc-box"><canvas></canvas></div>`;
+    out.appendChild(card);
+    const pie=!!s.pie;
+    const opts={responsive:true,maintainAspectRatio:false,animation:{duration:600},
+      layout:{padding:{top:8,right:10}},
+      plugins:{title:{display:true,text:[s.title,s.sub||''],font:{size:15,weight:'600'},padding:{bottom:8}},
+        legend:{display:s.legend!==false,position:'bottom'},
+        datalabels:pie?{display:false,anchor:'center',align:'center',color:'#fff',font:{weight:'700',size:12},formatter:v=>v>=3?(+v).toFixed(1)+'%':''}
+          :{display:false,anchor:'end',align:c=>{const v=c.dataset.data[c.dataIndex];return(typeof v==='number'&&v<0)?'bottom':'top'},clip:false,color:'#222',backgroundColor:'rgba(255,255,255,.8)',borderRadius:3,padding:2,font:{weight:'600',size:11},formatter:s.fmt||(v=>(+v).toFixed(1))}}};
+    if(s.scales)opts.scales=s.scales;
+    if(s.type==='radar')opts.scales={r:{angleLines:{color:'#e5e7eb'},grid:{color:'#e5e7eb'}}};
+    const ch=new Chart(card.querySelector('canvas'),{type:s.type,data:s.data,options:opts});
+    state.charts.push(ch);
+    const lb=card.querySelector('.lbl');
+    lb.onclick=()=>{const d=ch.options.plugins.datalabels;d.display=!d.display;ch.update();lb.textContent='ตัวเลขบนกราฟ: '+(d.display?'เปิด':'ปิด');lb.classList.toggle('on',d.display)};
+    card.querySelector('.dl').onclick=()=>{const a=document.createElement('a');a.href=ch.toBase64Image('image/png',1);a.download=`elephant_chart_${i+1}.png`;a.click()};
+  });
+  setTimeout(()=>out.scrollIntoView({behavior:'smooth',block:'start'}),50);
+};
+
+/* ---------- Reset ---------- */
+function resetAll(){
+  clearOutputs();hideErr();state.mode=null;state.res=null;
+  document.querySelectorAll('.mode').forEach(b=>b.classList.remove('on'));
+  ['#inpA','#inpB'].forEach(s=>{const i=$(s);i.value='';delete i.dataset.sel});
+  $('#bdgA').textContent='';$('#bdgB').textContent='';
+  $('#y1').value=2000;$('#y2').value=2020;$('#unit').value='USD PPP ต่อคนต่อวัน';
+  $('#txt').value='';$('#tblBox').innerHTML='';setMethod('table');
+  ['#secCountry','#secData','#secProc','#secRes'].forEach(s=>$(s).hidden=true);$('#wrapB').hidden=true;
+  window.scrollTo({top:0,behavior:'smooth'});toast('รีเซ็ตหน้าเรียบร้อย');
+}
+$('#resetTop').onclick=resetAll;$('#resetBot').onclick=resetAll;
+</script>
+</body>
+</html>
